@@ -11,6 +11,8 @@ csv_file = 'strainprofile_-_ES_out_0.65'
 
 # Load CSV file into a Pandas dataframe
 df = pd.read_csv('Dehnungsverlauf/strainprofile_1_ES_out_0.65.csv', sep='\t')
+#df = pd.read_csv('Dehnungsverlauf/strain_peak_for_ES_out_at_x_0.67_m.csv')
+
 
 # Extract x values from dataframe
 x_DFOS = df.T.values[0]
@@ -39,6 +41,9 @@ elif riss_nr==5:
     #RISS 5
     index_start = 4987
     index_end = 5295
+else:
+    index_start = 0
+    index_end = len(x_DFOS)-1
 
 x_DFOS = np.array(x_DFOS)
 x_DFOS = x_DFOS[index_start:index_end]
@@ -111,7 +116,7 @@ y_DFOS= np.array(y_DFOS)
 # Definition der zu optimierenden Funktion
 def objective(params, x, y, w_cr):
     gamma, a, b, c = params
-    y_predicted = w_cr*(gamma / (np.pi * a * (gamma**2 + (x/((0.01*w_cr**2+b*w_cr)/(b*w_cr)))**2))) #virtuelle Daten mit freien Parametern
+    y_predicted = w_cr*c*(b*gamma / (np.pi * a * (gamma**2 + x**2))) #virtuelle Daten mit freien Parametern
     #error = np.sum((y_predicted - y)**2)                                        #least square analyse
 
     n_steps = (y_predicted.shape)[0]
@@ -127,11 +132,11 @@ def objective(params, x, y, w_cr):
 
 # Definition der Funktion, um später virtuelle y_daten erzeugen zu können
 def cauchy(x, gamma, a, b, c, w_cr):
-    return w_cr*(gamma / (np.pi * a * (gamma**2 + (x/((c*w_cr**2+b*w_cr)/(b*w_cr)))**2)))  #virtuelle Daten mit freien Parametern
+    return w_cr*c*(b*gamma / (np.pi * a * (gamma**2 + x**2)))  #virtuelle Daten mit freien Parametern
 
 
 # Anfangswerte für die Optimierung
-initial_params = [ 0.017, 0.82, 200, 0.5]
+initial_params = [ 0.017, 0.82, 1, 1]
 
 # Optimierung
 result = minimize(objective, initial_params, args=(x_model, y_DFOS, w_cr_array), method='L-BFGS-B')
