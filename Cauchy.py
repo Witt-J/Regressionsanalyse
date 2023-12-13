@@ -86,8 +86,16 @@ def cauchy(x, gamma, a, w_cr):
 
 initial_params = [ 0.02, 0.9]
 
+# Constraints-Funktionen
+def constraint_function(params, x, y, w_cr):
+    gamma, a = params
+    y_predicted = w_cr[0,0]*(1.0 / (np.pi * gamma * a * (1 + ((x[0,0]) / gamma)**2)))+ 100
+    return y_predicted[x_model[0,0]==0.1] - 10
+
+constraint = {'type': 'eq', 'fun': constraint_function, 'args': (x_model, y_DFOS, w_cr_array)}
+
 # Optimierung
-result = minimize(objective, initial_params, args=(x_model, y_DFOS, w_cr_array), method='L-BFGS-B')
+result = minimize(objective, initial_params, constraints=constraint, args=(x_model, y_DFOS, w_cr_array), method='SLSQP')
 
 # Ausgabe der optimierten Parameter
 optimized_params = result.x

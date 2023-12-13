@@ -47,8 +47,8 @@ w_cr = [123.9, 20.4, 112.6, 81.6, 121.8] #microm
 
 x_prediction = np.linspace(-0.36, 0.36, 7200)
 
-gamma = 0.017
-a = 0.83
+gamma = 0.01621281
+a = 0.80975164
 
 def cauchy(x, gamma, a, x0, w_cr):
     return w_cr*(gamma / (np.pi * a * (gamma**2 + (x-x0)**2)) )  #virtuelle Daten mit freien Parametern
@@ -66,8 +66,26 @@ for i in range(len(pos_cr)):
         if k in data:
             data_single_crack[k] += k
 '''
+def moving_average1(data, window_size):
+    return np.convolve(data, np.ones(window_size)/window_size, mode='same')
+
+
+# Fenstergröße für den gleitenden Durchschnitt
+window_size = 30
+
+
 for i in range(len(pos_cr)):
     y_single_crack = cauchy(x_prediction, gamma, a, x0[i], w_cr[i])
+
+    limit = 0.15
+
+    mask1 = x_prediction > (pos_cr[i]+limit)
+    mask2 = x_prediction < (pos_cr[i]-limit)
+    y_single_crack[mask1] = 0
+    y_single_crack[mask2] = 0
+
+    y_single_crack = moving_average1(y_single_crack,window_size)
+
     plt.plot(x_prediction,y_single_crack,c='m')
     y_prediction = y_prediction+y_single_crack
 

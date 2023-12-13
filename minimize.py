@@ -1,53 +1,45 @@
 import numpy as np
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
-# Beispiel Daten
-x_data = np.linspace(-5, 5, 100)
-y_data = np.linspace(-5, 5, 100)
-x_data, y_data = np.meshgrid(x_data, y_data)
-z_data_true = np.sin(np.sqrt(x_data**2 + y_data**2))
+# Generate example data
+x_data = np.linspace(0, 1, 100)
+y_data_true = np.exp(-(x_data - 0.5)**2 / (2 * 0.1**2))+ np.random.normal(0, 0.05, 100) # True Gaussian curve
 
-# Hinzufügen von Rauschen zu den Daten
-noise = 0.1 * np.random.normal(size=z_data_true.shape)
-z_data_noisy = z_data_true + noise
+# Objective function to be minimized (sum of squared differences)
+def objective_function(params, x, y_target):
+    mu = params[0]
+    y_predicted = np.exp(-(x - mu)**2 / (2 * 0.1**2))  # Gaussian curve with fixed amplitude and sigma
+    return np.sum((y_predicted - y_target)**2)
 
-# Definition der zu optimierenden Funktion
-def objective(params, x, y, z_true):
-    a, b, c = params
-    z_predicted = a * np.sin(b * np.sqrt(x**2 + y**2)) + c
-    error = np.sum((z_predicted - z_true)**2)
-    return error
+# Constraint: value at x=0.5 should be 1
+def constraint_function(params, x, y_target):
+    mu = params[0]
+    y_predicted = np.exp(-(x - mu)**2 / (2 * 0.1**2))  # Gaussian curve with fixed amplitude and sigma
+    return y_predicted[x == 0.5] - 1
 
-# Anfangswerte für die Optimierung
-initial_params = [1, 1, 0]
+# Initial guess for the optimization
+initial_guess = [0.4]
 
-# Optimierung
-result = minimize(objective, initial_params, args=(x_data, y_data, z_data_noisy), method='L-BFGS-B')
+# Define the constraint
+constraint = {'type': 'eq', 'fun': constraint_function, 'args': (x_data, y_data_true)}
 
-# Ausgabe der optimierten Parameter
-optimized_params = result.x
-print("Optimierte Parameter:", optimized_params)
+# Perform the optimization
+result = minimize(objective_function, initial_guess, args=(x_data, y_data_true), constraints=constraint)
 
-# Verwenden Sie die optimierten Parameter, um die Funktion zu erstellen
-def optimized_function(x, y):
-    a, b, c = optimized_params
-    return a * np.sin(b * np.sqrt(x**2 + y**2)) + c
+# Display the results
+optimized_mu = result.x[0]
+print("Optimized mu:", optimized_mu)
 
-# Beispiel: Vorhersage für neue Daten
-new_x_data = np.linspace(-5, 5, 100)
-new_y_data = np.linspace(-5, 5, 100)
-new_x_data, new_y_data = np.meshgrid(new_x_data, new_y_data)
-predictions = optimized_function(new_x_data, new_y_data)
+# Evaluate the optimized Gaussian curve
+y_data_optimized = np.exp(-(x_data - optimized_mu)**2 / (2 * 0.1**2))
 
-# Plot der Daten und der optimierten Funktion
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(x_data, y_data, z_data_noisy, label='Noisy Data')
-ax.plot_surface(new_x_data, new_y_data, predictions, alpha=0.5, label='Optimized Function', cmap='viridis')
-ax.set_xlabel('X')
-ax.set_ylabel('Y')
-ax.set_zlabel('Z')
+# Plotting
+plt.plot(x_data, y_data_true, label="True Gaussian Curve")
+plt.plot(x_data, y_data_optimized, label="Optimized Gaussian Curve", linestyle='dashed', color='red')
+plt.scatter([0.5], [1], color='green', marker='o', label="Constraint Point (x=0.5, y=1)")
 plt.legend()
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.title("Fitting a Gaussian Curve with Constraint")
 plt.show()
