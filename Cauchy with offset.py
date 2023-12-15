@@ -33,9 +33,6 @@ w_cr_array = [26.151312777777783, 56.88582611111112, 92.34463333333338, 130.0315
 w_cr_array = [26.151312777777783, 56.88582611111112, 92.34463333333338, 130.0315105555556, 168.98190833333337,
               209.0284805555556, 248.09519944444452, 285.26361138888893, 322.0303594444445, 357.5927802777779,
               391.4908075000001, 412.21442166666674]
-w_cr_strain = [26.151312777777783, 56.88582611111112, 92.34463333333338, 130.0315105555556, 168.98190833333337,
-              209.0284805555556, 248.09519944444452, 285.26361138888893, 322.0303594444445, 357.5927802777779,
-              391.4908075000001, 412.21442166666674]
 
 
 w_cr_array = np.array(w_cr_array)
@@ -55,11 +52,8 @@ for i in range(df.shape[1]-1):
 '''
 for i in range(df.shape[1]-3):
     y_DFOS_temp = np.array(df.T.values[i+1])
-    y_first = y_DFOS_temp[0]
-    y_last = y_DFOS_temp[0]
-    avg_y = (y_first+y_last)/2
+
     y_DFOS_temp = np.array(y_DFOS_temp)
-    y_DFOS_temp = y_DFOS_temp-avg_y
 
     y_DFOS.append(y_DFOS_temp)
     y_max.append(max(y_DFOS_temp))
@@ -71,18 +65,23 @@ y_max = np.array(y_max)
 # Definition der zu optimierenden Funktion
 # Definition der zu optimierenden Funktion
 def objective(params, x, y, w_cr):
-    gamma, a, b = params
-    y_predicted = w_cr*(gamma / (np.pi * a * (gamma**2 + x**2)) +b)  #virtuelle Daten mit freien Parametern
+    gamma, a, b, c = params
+    y_predicted = w_cr*(gamma / (np.pi * a * (gamma**2 + x**2)) )  #virtuelle Daten mit freien Parametern
+    for i in range(df.shape[1]-3):
+        y_predicted[i] = y_predicted[i]-y_predicted[i,0]
+        y_predicted[i] = (b * w_cr[i] + c) * y_predicted[i]
     error = np.sum((y_predicted - y)**2)                                        #least square analyse
     return error
 
 # Definition der Funktion, um später virtuelle y_daten erzeugen zu können
-def cauchy(x, gamma, a, b, w_cr):
-    return w_cr*(gamma / (np.pi * a * (gamma**2 + x**2))+b)  #virtuelle Daten mit freien Parametern
+def cauchy(x, gamma, a, b, c, w_cr):
+    y_predicted = w_cr * (gamma / (np.pi * a * (gamma ** 2 + x ** 2)))  # virtuelle Daten mit freien Parametern
+    for i in range(df.shape[1] - 3):
+        y_predicted[i] = y_predicted[i] - y_predicted[i, 0]
+        y_predicted[i] = (b * w_cr[i] + c) * y_predicted[i]
+    return y_predicted
 
-
-initial_params = [ 0.016, 0.8, 0.2]
-
+initial_params = [ 0.016, 0.8 , -0.01, 1.1]
 
 # Optimierung
 result = minimize(objective, initial_params, args=(x_model, y_DFOS, w_cr_array))
@@ -90,7 +89,7 @@ result = minimize(objective, initial_params, args=(x_model, y_DFOS, w_cr_array))
 # Ausgabe der optimierten Parameter
 optimized_params = result.x
 print("Optimierte Parameter:", optimized_params)
-gamma, a, b = optimized_params
+gamma, a, b, c = optimized_params
 
 
 def r_squared(y_true, y_pred):
@@ -109,16 +108,14 @@ def r_squared(y_true, y_pred):
     return r2
 
 #erstellen der y Werte mit der Laplace funktion und den optimierten parametern
+y_lp = cauchy(x_model, gamma, a, b, c, w_cr_array)
 for i in range(12):
-    y_lp = cauchy(x_model[i], gamma, a, b, w_cr_array[i,i])
-
     # PLOT
     plt.scatter(x_model[i], y_DFOS[i])
-    plt.plot(x_model[i], y_lp, color='k')
+    plt.plot(x_model[i], y_lp[i], color='k')
     plt.show()
 
-    r2 = r_squared(y_DFOS[i], cauchy(x_model[i], gamma, a, b, w_cr_array[i, i]))
+    r2 = r_squared(y_DFOS[i], y_lp[i])
     print(f"R-Squared: {r2}")
 
-plt.scatter(w_cr_strain,y_max)
-plt.show()
+
