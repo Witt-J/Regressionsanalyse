@@ -10,6 +10,7 @@ import pandas as pd
 csv_file = 'cr5_ES_out_0.65'
 
 # Load CSV file into a Pandas dataframe
+#df = pd.read_csv('Dehnungsverlauf/strain_peak_for_ES_out_at_x_0.67_m.csv')
 df = pd.read_csv('Dehnungsverlauf/strain_peak_for_ES_out_at_x_0.67_m.csv')
 
 # Extract x values from dataframe
@@ -54,6 +55,12 @@ for i in range(df.shape[1]-1):
 '''
 for i in range(df.shape[1]-3):
     y_DFOS_temp = np.array(df.T.values[i+1])
+    y_first = y_DFOS_temp[0]
+    y_last = y_DFOS_temp[0]
+    avg_y = (y_first+y_last)/2
+    y_DFOS_temp = np.array(y_DFOS_temp)
+    y_DFOS_temp = y_DFOS_temp-avg_y
+
     y_DFOS.append(y_DFOS_temp)
     y_max.append(max(y_DFOS_temp))
 
@@ -62,40 +69,23 @@ np.stack(y_DFOS)
 y_DFOS= np.array(y_DFOS)
 y_max = np.array(y_max)
 # Definition der zu optimierenden Funktion
+# Definition der zu optimierenden Funktion
 def objective(params, x, y, w_cr):
     gamma, a = params
-    y_predicted = w_cr*(gamma / (np.pi * a * (gamma**2 + x**2))) #virtuelle Daten mit freien Parametern
-    #error = np.sum((y_predicted - y)**2)                                        #least square analyse
-
-    n_steps = (y_predicted.shape)[0]
-    lenght = (y_predicted.shape)[1]
-    third = (lenght/3).__floor__()
-
-    error1 = np.sum((y_predicted[0:n_steps,0:third] - y[0:n_steps,0:third]) **2)
-    error2 = np.sum((y_predicted[0:n_steps,third:lenght-third] - y[0:n_steps,third:lenght-third])**6)                                        #least square analyse
-    error3 = np.sum((y_predicted[0:n_steps,lenght-third:lenght] - y[0:n_steps,lenght-third:lenght]) **2)
-
-    error = error1+error2+error3
+    y_predicted = w_cr*(gamma / (np.pi * a * (gamma**2 + x**2)) )  #virtuelle Daten mit freien Parametern
+    error = np.sum((y_predicted - y)**2)                                        #least square analyse
     return error
-
 
 # Definition der Funktion, um später virtuelle y_daten erzeugen zu können
 def cauchy(x, gamma, a, w_cr):
-    return w_cr*(1.0 / (np.pi * gamma * a * (1 + ((x) / gamma)**2)))
+    return w_cr*(gamma / (np.pi * a * (gamma**2 + x**2)))  #virtuelle Daten mit freien Parametern
 
 
-initial_params = [ 0.02, 0.9]
+initial_params = [ 0.016, 0.8]
 
-# Constraints-Funktionen
-def constraint_function(params, x, y, w_cr):
-    gamma, a = params
-    y_predicted = w_cr[0,0]*(1.0 / (np.pi * gamma * a * (1 + ((x[0,0]) / gamma)**2)))+ 100
-    return y_predicted[x_model[0,0]==0.1] - 10
-
-constraint = {'type': 'eq', 'fun': constraint_function, 'args': (x_model, y_DFOS, w_cr_array)}
 
 # Optimierung
-result = minimize(objective, initial_params, constraints=constraint, args=(x_model, y_DFOS, w_cr_array), method='SLSQP')
+result = minimize(objective, initial_params, args=(x_model, y_DFOS, w_cr_array))
 
 # Ausgabe der optimierten Parameter
 optimized_params = result.x
