@@ -73,7 +73,7 @@ def objective(params, x, y, w_cr, gamma):
     return error
 
 # Definition der Funktion, um später virtuelle y_daten erzeugen zu können
-def cauchy(x, gamma, s, alpha, w_cr):
+def lorentz(x, gamma, s, alpha, w_cr):
     y_predicted = w_cr*gamma / (1+(x/s)**2)**alpha           # virtuelle Daten mit freien Parametern
     #for i in range(df.shape[1] - 3):
     #    y_predicted[i] = y_predicted[i] - y_predicted[i, 0]
@@ -107,7 +107,7 @@ def r_squared(y_true, y_pred):
     return r2
 
 #erstellen der y Werte mit der Laplace funktion und den optimierten parametern
-y_lp = cauchy(x_model, gamma, s, alpha, w_cr_array)
+y_lp = lorentz(x_model, gamma, s, alpha, w_cr_array)
 for i in range(12):
     # PLOT
     plt.scatter(x_model[i], y_DFOS[i])
