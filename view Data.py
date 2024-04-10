@@ -102,8 +102,13 @@ plt.plot(x_prediction,y_prediction,c='r')
 plt.show()
 """
 gamma = 24.6
-s = 0.01872447
-alpha = 1.25446139
+#C12
+#s = 0.01872447
+#alpha = 1.25446139
+
+#C3
+s = 0.01881
+alpha = 1.25823
 
 for i in range(len(pos_cr)):
     y_single_crack = lorentz(x_prediction, gamma, s, alpha, x0[i], w_cr[i], pos_cr[i], limit)
