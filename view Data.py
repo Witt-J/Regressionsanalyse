@@ -67,8 +67,22 @@ def cauchy(x, gamma, a, b, c, x0, w_cr, pos_cr, limit):
     return y_predicted
 
 
+
 def lorentz(x, gamma, s, alpha, x0, w_cr, pos_cr, limit):
     y_predicted = w_cr*gamma / (1+((x-x0)/s)**2)**alpha  # virtuelle Daten mit freien Parametern
+    x_list = x.tolist()
+
+    gesuchter_wert = (pos_cr - limit)
+    nächstes_element = min(x_list, key=lambda x: abs(x - gesuchter_wert))
+
+    index_inf_l = x_list.index(nächstes_element)
+
+    y_predicted = y_predicted - y_predicted[index_inf_l]
+    #y_predicted = (b * w_cr + c) * y_predicted
+    return y_predicted
+
+def lorentz_lin(x, gamma, s, alpha_0, alpha_1, x0, w_cr, pos_cr, limit):
+    y_predicted = w_cr*gamma / (1+((x-x0)/s)**2)**(alpha_0+w_cr*alpha_1)  # virtuelle Daten mit freien Parametern
     x_list = x.tolist()
 
     gesuchter_wert = (pos_cr - limit)
@@ -107,8 +121,17 @@ gamma = 24.6
 #alpha = 1.25446139
 
 #C3
-s = 0.01881
-alpha = 1.25823
+#s = 0.01881
+#alpha = 1.25823
+
+#from Gradient
+#s = 0.016
+#alpha = 1.6
+
+#interpolation
+s = 0.0184
+alpha = 1.138902
+alpha_0 = 0.0015
 
 for i in range(len(pos_cr)):
     y_single_crack = lorentz(x_prediction, gamma, s, alpha, x0[i], w_cr[i], pos_cr[i], limit)

@@ -85,6 +85,10 @@ initial_params = [ 0.018, 1.25]
 # Optimierung
 result = minimize(objective, initial_params, args=(x_model, y_DFOS, w_cr_array, gamma))
 
+res1 = minimize(objective, initial_params, args=(x_model[1], y_DFOS[1], w_cr_array[1], gamma))
+res2 = minimize(objective, initial_params, args=(x_model[11], y_DFOS[11], w_cr_array[11], gamma))
+
+
 # Ausgabe der optimierten Parameter
 optimized_params = result.x
 print("Optimierte Parameter:", optimized_params)
