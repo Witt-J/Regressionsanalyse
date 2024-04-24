@@ -31,13 +31,15 @@ for i in range(11):
 
     # Extract x values from dataframe
     y_DFOS_temp = np.array(df.T.values[1])
+    #y_DFOS_temp = list(map(float, y_DFOS_temp))
+    #y_DFOS_temp = np.array(y_DFOS_temp)
     y_DFOS.append(y_DFOS_temp)
 
 #umformen in einen Array mit Shape von x_data und w_cr_array
 np.stack(y_DFOS)
 y_DFOS= np.array(y_DFOS)
 
-plt.scatter(x_DFOS[4],y_DFOS[4])
+plt.plot(x_DFOS[4],y_DFOS[4])
 #plt.show()
 
 #Position Cracks
@@ -130,11 +132,11 @@ gamma = 24.6
 
 #interpolation
 s = 0.0184
-alpha = 1.138902
-alpha_0 = 0.0015
+alpha_0 = 1.138902
+alpha_1 = 0.0015
 
 for i in range(len(pos_cr)):
-    y_single_crack = lorentz(x_prediction, gamma, s, alpha, x0[i], w_cr[i], pos_cr[i], limit)
+    y_single_crack = lorentz_lin(x_prediction, gamma, s, alpha_0, alpha_1, x0[i], w_cr[i], pos_cr[i], limit)
 
     mask1 = x_prediction > (pos_cr[i]+limit)
     mask2 = x_prediction < (pos_cr[i]-limit)
