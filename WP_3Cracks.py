@@ -48,10 +48,7 @@ w_cr_array_C12 = [26.151312777777783, 56.88582611111112, 92.34463333333338, 130.
 
 
 
-w_cr_array = np.array(w_cr_array)
-
-#mit Meshgrid 2D Arrays erzeugen, welche die gleiche Dimension (shape) haben -> damit diese mit dem y_daten überlager werden können
-x_model_C12, w_cr_array = np.meshgrid(x_model_C12, w_cr_array)
+#w_cr_array_C12 = np.array(w_cr_array_C12)
 
 
 y_DFOS = []
@@ -74,23 +71,6 @@ np.stack(y_DFOS)
 y_DFOS= np.array(y_DFOS)
 y_max = np.array(y_max)
 
-w_cr_list = []
-
-for i in range(12):
-    integral = np.trapz(y_DFOS[i],x=x_model_C12[i])
-    w_cr_list.append(integral)
-
-
-w_cr_list = np.array(w_cr_list)
-
-#mit Meshgrid 2D Arrays erzeugen, welche die gleiche Dimension (shape) haben -> damit diese mit dem y_daten überlager werden können
-x_Dfos2, w_cr_list = np.meshgrid(x_DFOS_C12, w_cr_list)
-
-# Definition der zu optimierenden Funktion
-
-
-# Definition der Funktion, um später virtuelle y_daten erzeugen zu können
-
 
 def r_squared(y_true, y_pred):
     # Berechnung des Residuals
@@ -108,11 +88,10 @@ def r_squared(y_true, y_pred):
 gamma = 24.6
 sigma = 0.015762
 
-x_model_C12, list = np.meshgrid(x_DFOS_C12, list)
 
 window = 3
 weights = np.repeat(1.0, window)/window
-x_model_C12 = x_model_C12[0][1:-1]
+x_model_C12 = x_model_C12[1:-1]
 #x_model_C12 = x_model_C12[0]
 
 List_linke_Wendepunkt = []
@@ -120,7 +99,6 @@ List_rechte_Wendepunkt = []
 mittel_Wendepunkt_C12 = []
 max_loc_list = []
 max_list_C12 = []
-w_l_C12 = []
 max_grad_list_C12 = []
 
 for i in range(12):
@@ -136,7 +114,6 @@ for i in range(12):
     List_linke_Wendepunkt.append(abs(x_model_C12[max_index]))
     List_rechte_Wendepunkt.append(x_model_C12[min_index])
     mittel_Wendepunkt_C12.append((abs(x_model_C12[max_index]) + x_model_C12[min_index]) / 2)
-    w_l_C12.append(w_cr_list[i,i])
     #plt.plot(x_model_C12, gradient)
     #plt.show()
 
@@ -154,12 +131,6 @@ def lorentz(x, gamma, sigma0, sigma1, w_cr):
 
     return y_predicted
 
-#for i in range(12):
-    #y_lor = lorentz(x_model_C12, gamma, sigma, w_l_C12[i])
-
-    #plt.scatter(x_model_C12_org,y_DFOS[i])
-    #plt.plot(x_model_C12,y_lor,'k')
-    #plt.show()
 
 ###################################################
 #                C3
@@ -167,6 +138,7 @@ def lorentz(x, gamma, sigma0, sigma1, w_cr):
 w_cr_array_C3 = [19.669451388888874, 48.233372777777745, 80.78568333333328, 115.46603972222213, 150.30286916666654,
                  184.53831499999987, 218.73831055555536, 253.81509111111086, 287.91341222222195, 322.43429111111084,
                  357.71768590277736, 402.8620627777773]
+#w_cr_array_C3 = np.array(w_cr_array_C3)
 
 y_DFOS_C3 = []
 for i in range(12):
@@ -205,13 +177,7 @@ List_rechte_Wendepunkt_C3 = []
 mittel_Wendepunkt_C3 = []
 max_loc_list_C3 = []
 max_list_C3 = []
-w_l_C3 = []
 max_grad_list_C3 = []
-
-for i in range(12):
-    integral = np.trapz(y_DFOS_C3[i],x=x_model_C3)
-    w_l_C3.append(integral)
-
 
 for i in range(12):
     max_loc_list_C3.append(x_model_C3[np.argmax(y_DFOS_C3[i])])
@@ -235,6 +201,7 @@ for i in range(12):
 w_cr_array_C9 = [12.746289345345351, 32.35402805555557, 58.232954722222225, 89.09878972222225, 121.80794166666666,
                  153.00820527777776, 184.5041462177177, 215.76272015765764, 247.2092651576577, 276.27144999999996,
                  305.6654791666669, 323.5282844444444]
+#w_cr_array_C9 = np.array(w_cr_array_C9)
 y_DFOS_C9 = []
 for i in range(12):
     df = pd.read_csv(('Dehnungsverlauf/strainprofile_' + str((i+1)) + '_ES_out_0.65.csv'), sep='\t')
@@ -271,13 +238,7 @@ List_rechte_Wendepunkt_C9 = []
 mittel_Wendepunkt_C9 = []
 max_loc_list_C9 = []
 max_list_C9 = []
-w_l_C9 = []
 max_grad_list_C9 = []
-
-for i in range(12):
-    integral = np.trapz(y_DFOS_C9[i],x=x_model_C9)
-    w_l_C9.append(integral)
-
 
 for i in range(12):
     max_loc_list_C9.append(x_model_C9[np.argmax(y_DFOS_C9[i])])
@@ -306,13 +267,13 @@ def objective(params, w_cr, strain_max):
 initial_params = [24.6]
 
 # Optimierung
-result = minimize(objective, initial_params, args=(w_l_C3, max_list_C3))
+result = minimize(objective, initial_params, args=(w_cr_array_C3, max_list_C3))
 print(result.x[0])
 gamma_C3 = result.x[0]
-result = minimize(objective, initial_params, args=(w_l_C9, max_list_C9))
+result = minimize(objective, initial_params, args=(w_cr_array_C9, max_list_C9))
 print(result.x[0])
 gamma_C9 = result.x[0]
-result = minimize(objective, initial_params, args=(w_l_C12, max_list_C12))
+result = minimize(objective, initial_params, args=(w_cr_array_C12, max_list_C12))
 print(result.x[0])
 gamma_C12 = result.x[0]
 
@@ -320,16 +281,16 @@ def Regression(w_cr, gamma):
     strain_max = w_cr*gamma
     return strain_max
 
-C3 = Regression(w_l_C3,np.repeat(gamma_C3,len(w_l_C3)))
-C9 = Regression(w_l_C9,np.repeat(gamma_C9,len(w_l_C9)))
-C12 = Regression(w_l_C12,np.repeat(gamma_C12,len(w_l_C12)))
+C3 = Regression(w_cr_array_C3,np.repeat(gamma_C3,len(w_cr_array_C3)))
+C9 = Regression(w_cr_array_C9,np.repeat(gamma_C9,len(w_cr_array_C9)))
+C12 = Regression(w_cr_array_C12,np.repeat(gamma_C12,len(w_cr_array_C12)))
 
-plt.scatter(w_l_C3,max_list_C3,label='Strain max C3')
-plt.plot(w_l_C3,C3,label='Reg C3')
-plt.scatter(w_l_C9,max_list_C9,label='Strain max C9')
-plt.plot(w_l_C9,C9,label='Reg C9')
-plt.scatter(w_l_C12,max_list_C12,label='Strain max C12')
-plt.plot(w_l_C12,C12,label='Reg C12')
+plt.scatter(w_cr_array_C3,max_list_C3,label='Strain max C3')
+plt.plot(w_cr_array_C3,C3,label='Reg C3')
+plt.scatter(w_cr_array_C9,max_list_C9,label='Strain max C9')
+plt.plot(w_cr_array_C9,C9,label='Reg C9')
+plt.scatter(w_cr_array_C12,max_list_C12,label='Strain max C12')
+plt.plot(w_cr_array_C12,C12,label='Reg C12')
 plt.legend()
 plt.show()
 
@@ -345,35 +306,35 @@ def Regression_sigma(w_cr, sigma0, sigma1):
     sig = sigma0 + np.array(w_cr) * sigma1
     return sig
 
-result = minimize(objective_WP, initial_params, args=(w_l_C3, mittel_Wendepunkt_C3))
+result = minimize(objective_WP, initial_params, args=(w_cr_array_C3, mittel_Wendepunkt_C3))
 sigma0_C3, sigma1_C3 = result.x
-result = minimize(objective_WP, initial_params, args=(w_l_C9, mittel_Wendepunkt_C9))
+result = minimize(objective_WP, initial_params, args=(w_cr_array_C9, mittel_Wendepunkt_C9))
 sigma0_C9, sigma1_C9 = result.x
-result = minimize(objective_WP, initial_params, args=(w_l_C12, mittel_Wendepunkt_C12))
+result = minimize(objective_WP, initial_params, args=(w_cr_array_C12, mittel_Wendepunkt_C12))
 sigma0_C12, sigma1_C12 = result.x
 
 
-plt.scatter(w_l_C3,mittel_Wendepunkt_C3,label='X WP C3')
-plt.scatter(w_l_C9,mittel_Wendepunkt_C9,label='X WP C9')
-plt.scatter(w_l_C12,mittel_Wendepunkt_C12,label='X WP C12')
+plt.scatter(w_cr_array_C3,mittel_Wendepunkt_C3,label='X WP C3')
+plt.scatter(w_cr_array_C9,mittel_Wendepunkt_C9,label='X WP C9')
+plt.scatter(w_cr_array_C12,mittel_Wendepunkt_C12,label='X WP C12')
 plt.legend()
 plt.show()
 
 
-plt.scatter(w_l_C3,np.array(mittel_Wendepunkt_C3)*np.sqrt(3),label='Sigma C3')
-plt.plot(w_l_C3, Regression_sigma(w_l_C3,sigma0_C3,sigma1_C3))
+plt.scatter(w_cr_array_C3,np.array(mittel_Wendepunkt_C3)*np.sqrt(3),label='Sigma C3')
+plt.plot(w_cr_array_C3, Regression_sigma(w_cr_array_C3,sigma0_C3,sigma1_C3))
 
-plt.scatter(w_l_C9,np.array(mittel_Wendepunkt_C9)*np.sqrt(3),label='Sigma C9')
-plt.plot(w_l_C9, Regression_sigma(w_l_C9,sigma0_C9,sigma1_C9))
+plt.scatter(w_cr_array_C9,np.array(mittel_Wendepunkt_C9)*np.sqrt(3),label='Sigma C9')
+plt.plot(w_cr_array_C9, Regression_sigma(w_cr_array_C9,sigma0_C9,sigma1_C9))
 
-plt.scatter(w_l_C12,np.array(mittel_Wendepunkt_C12)*np.sqrt(3),label='Sigma C12')
-plt.plot(w_l_C12, Regression_sigma(w_l_C12,sigma0_C12,sigma1_C12))
+plt.scatter(w_cr_array_C12,np.array(mittel_Wendepunkt_C12)*np.sqrt(3),label='Sigma C12')
+plt.plot(w_cr_array_C12, Regression_sigma(w_cr_array_C12,sigma0_C12,sigma1_C12))
 
 plt.legend()
 plt.show()
 
 strain_max_list_all = max_list_C3 + max_list_C9 + max_list_C12
-w_list_all = w_l_C3 + w_l_C9 + w_l_C12
+w_list_all = w_cr_array_C3 + w_cr_array_C9 + w_cr_array_C12
 WP_all = mittel_Wendepunkt_C3+mittel_Wendepunkt_C9+mittel_Wendepunkt_C12
 
 initial_params = [24.6]
@@ -392,31 +353,31 @@ print('sigma1=',sigma1)
 
 fig, axs = plt.subplots(3,3)
 
-axs[0,0].plot(x_model_C3, lorentz(x_model_C3,g,sigma0,sigma1,w_l_C3[1]),'k')
+axs[0,0].plot(x_model_C3, lorentz(x_model_C3,g,sigma0,sigma1,w_cr_array_C3[1]),'k')
 axs[0,0].scatter(x_DFOS_C3,y_DFOS_C3[1])
 
-axs[0,1].plot(x_model_C9, lorentz(x_model_C9,g,sigma0,sigma1,w_l_C9[1]),'k')
+axs[0,1].plot(x_model_C9, lorentz(x_model_C9,g,sigma0,sigma1,w_cr_array_C9[1]),'k')
 axs[0,1].scatter(x_DFOS_C9,y_DFOS_C9[1])
 
-axs[0,2].plot(x_model_C12, lorentz(x_model_C12,g,sigma0,sigma1,w_l_C12[1]),'k')
+axs[0,2].plot(x_model_C12, lorentz(x_model_C12,g,sigma0,sigma1,w_cr_array_C12[1]),'k')
 axs[0,2].scatter(x_DFOS_C3,y_DFOS_C3[1])
 
-axs[1,0].plot(x_model_C3, lorentz(x_model_C3,g,sigma0,sigma1,w_l_C3[7]),'k')
+axs[1,0].plot(x_model_C3, lorentz(x_model_C3,g,sigma0,sigma1,w_cr_array_C3[7]),'k')
 axs[1,0].scatter(x_DFOS_C3,y_DFOS_C3[7])
 
-axs[1,1].plot(x_model_C9, lorentz(x_model_C9,g,sigma0,sigma1,w_l_C9[7]),'k')
+axs[1,1].plot(x_model_C9, lorentz(x_model_C9,g,sigma0,sigma1,w_cr_array_C9[7]),'k')
 axs[1,1].scatter(x_DFOS_C9,y_DFOS_C9[7])
 
-axs[1,2].plot(x_model_C12, lorentz(x_model_C12,g,sigma0,sigma1,w_l_C12[7]),'k')
+axs[1,2].plot(x_model_C12, lorentz(x_model_C12,g,sigma0,sigma1,w_cr_array_C12[7]),'k')
 axs[1,2].scatter(x_DFOS_C12,y_DFOS[7])
 
-axs[2,0].plot(x_model_C3, lorentz(x_model_C3,g,sigma0,sigma1,w_l_C12[11]),'k')
+axs[2,0].plot(x_model_C3, lorentz(x_model_C3,g,sigma0,sigma1,w_cr_array_C12[11]),'k')
 axs[2,0].scatter(x_DFOS_C3,y_DFOS_C3[11])
 
-axs[2,1].plot(x_model_C9, lorentz(x_model_C9,g,sigma0,sigma1,w_l_C9[11]),'k')
+axs[2,1].plot(x_model_C9, lorentz(x_model_C9,g,sigma0,sigma1,w_cr_array_C9[11]),'k')
 axs[2,1].scatter(x_DFOS_C9,y_DFOS_C9[11])
 
-axs[2,2].plot(x_model_C12, lorentz(x_model_C12,g,sigma0,sigma1,w_l_C12[11]),'k')
+axs[2,2].plot(x_model_C12, lorentz(x_model_C12,g,sigma0,sigma1,w_cr_array_C12[11]),'k')
 axs[2,2].scatter(x_DFOS_C12,y_DFOS[11])
 
 
