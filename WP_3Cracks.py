@@ -131,6 +131,10 @@ def lorentz(x, gamma, sigma0, sigma1, w_cr):
 
     return y_predicted
 
+def lorentz_single(x, gamma, sigma, w_cr):
+    y_predicted = w_cr*gamma / (1+(x/sigma)**2)           # virtuelle Daten mit freien Parametern
+
+    return y_predicted
 
 ###################################################
 #                C3
@@ -300,7 +304,15 @@ def objective_WP(params, w_cr, sigma_real):
     error = np.sum((np.array(sigma_real)*np.sqrt(3) - sigma_predicted)**2)                                        #least square analyse
     return error
 
+def objective_WP_single(params, w_cr, sigma_real):
+    sigma = params
+    sigma_predicted = sigma  #virtuelle Daten mit freien Parametern
+    error = np.sum((np.array(sigma_real)*np.sqrt(3) - sigma_predicted)**2)                                        #least square analyse
+    return error
+
 initial_params = [0.009, -0.0001]
+initial_params_single = [1.6]
+
 
 def Regression_sigma(w_cr, sigma0, sigma1):
     sig = sigma0 + np.array(w_cr) * sigma1
@@ -308,10 +320,17 @@ def Regression_sigma(w_cr, sigma0, sigma1):
 
 result = minimize(objective_WP, initial_params, args=(w_cr_array_C3, mittel_Wendepunkt_C3))
 sigma0_C3, sigma1_C3 = result.x
+result = minimize(objective_WP_single, initial_params_single, args=(w_cr_array_C3, mittel_Wendepunkt_C3))
+sigma_C3 = result.x
 result = minimize(objective_WP, initial_params, args=(w_cr_array_C9, mittel_Wendepunkt_C9))
 sigma0_C9, sigma1_C9 = result.x
+result = minimize(objective_WP_single, initial_params_single, args=(w_cr_array_C9, mittel_Wendepunkt_C9))
+sigma_C9 = result.x
 result = minimize(objective_WP, initial_params, args=(w_cr_array_C12, mittel_Wendepunkt_C12))
 sigma0_C12, sigma1_C12 = result.x
+result = minimize(objective_WP_single, initial_params_single, args=(w_cr_array_C12, mittel_Wendepunkt_C12))
+sigma_C12 = result.x
+
 
 
 plt.scatter(w_cr_array_C3,mittel_Wendepunkt_C3,label='X WP C3')
@@ -350,39 +369,56 @@ print('sigma0=',sigma0)
 print('sigma1=',sigma1)
 
 
+print('mit nur einem sigma')
+initial_params = [0.009]
+result = minimize(objective_WP_single,initial_params, args=(w_list_all, WP_all))
+sigma = result.x
+print('sigma=',sigma)
+
 
 fig, axs = plt.subplots(3,3)
 
 axs[0,0].plot(x_model_C3, lorentz(x_model_C3,g,sigma0,sigma1,w_cr_array_C3[1]),'k')
+axs[0,0].plot(x_model_C3, lorentz_single(x_model_C3,g,sigma,w_cr_array_C3[1]),'r')
 axs[0,0].scatter(x_DFOS_C3,y_DFOS_C3[1])
 
 axs[0,1].plot(x_model_C9, lorentz(x_model_C9,g,sigma0,sigma1,w_cr_array_C9[1]),'k')
+axs[0,1].plot(x_model_C9, lorentz_single(x_model_C9,g,sigma,w_cr_array_C9[1]),'r')
 axs[0,1].scatter(x_DFOS_C9,y_DFOS_C9[1])
 
 axs[0,2].plot(x_model_C12, lorentz(x_model_C12,g,sigma0,sigma1,w_cr_array_C12[1]),'k')
+axs[0,2].plot(x_model_C12, lorentz_single(x_model_C12,g,sigma,w_cr_array_C12[1]),'r')
 axs[0,2].scatter(x_DFOS_C3,y_DFOS_C3[1])
 
 axs[1,0].plot(x_model_C3, lorentz(x_model_C3,g,sigma0,sigma1,w_cr_array_C3[7]),'k')
+axs[1,0].plot(x_model_C3, lorentz_single(x_model_C3,g,sigma,w_cr_array_C3[7]),'r')
 axs[1,0].scatter(x_DFOS_C3,y_DFOS_C3[7])
 
 axs[1,1].plot(x_model_C9, lorentz(x_model_C9,g,sigma0,sigma1,w_cr_array_C9[7]),'k')
+axs[1,1].plot(x_model_C9, lorentz_single(x_model_C9,g,sigma,w_cr_array_C9[7]),'r')
 axs[1,1].scatter(x_DFOS_C9,y_DFOS_C9[7])
 
 axs[1,2].plot(x_model_C12, lorentz(x_model_C12,g,sigma0,sigma1,w_cr_array_C12[7]),'k')
+axs[1,2].plot(x_model_C12, lorentz_single(x_model_C12,g,sigma,w_cr_array_C12[7]),'r')
 axs[1,2].scatter(x_DFOS_C12,y_DFOS[7])
 
 axs[2,0].plot(x_model_C3, lorentz(x_model_C3,g,sigma0,sigma1,w_cr_array_C12[11]),'k')
+axs[2,0].plot(x_model_C3, lorentz_single(x_model_C3,g,sigma,w_cr_array_C3[11]),'r')
 axs[2,0].scatter(x_DFOS_C3,y_DFOS_C3[11])
 
 axs[2,1].plot(x_model_C9, lorentz(x_model_C9,g,sigma0,sigma1,w_cr_array_C9[11]),'k')
+axs[2,1].plot(x_model_C9, lorentz_single(x_model_C9,g,sigma,w_cr_array_C9[11]),'r')
 axs[2,1].scatter(x_DFOS_C9,y_DFOS_C9[11])
 
 axs[2,2].plot(x_model_C12, lorentz(x_model_C12,g,sigma0,sigma1,w_cr_array_C12[11]),'k')
+axs[2,2].plot(x_model_C12, lorentz_single(x_model_C12,g,sigma,w_cr_array_C12[11]),'r')
 axs[2,2].scatter(x_DFOS_C12,y_DFOS[11])
-
 
 plt.show()
 
+
+
+"""
 w_regresss = np.linspace(0,500,21)
 
 gradient_opt = []
@@ -466,7 +502,7 @@ plt.title('Lorentzfunktion')
 plt.legend()
 plt.grid(True)
 plt.show()
-
+"""
 
 
 
