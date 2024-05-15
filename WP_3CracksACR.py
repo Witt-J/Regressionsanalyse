@@ -9,69 +9,6 @@ import pandas as pd
 import sympy as sp
 
 
-# Name der CSV-Datei
-#csv_file = 'cr5_ES_out_0.65'
-
-# Load CSV file into a Pandas dataframe
-#df = pd.read_csv('Dehnungsverlauf/strain_peak_for_ES_out_at_x_0.67_m.csv')
-df = pd.read_csv('Dehnungsverlauf/strain_peak_for_ES_out_at_x_0.67_m.csv')
-
-# Extract x values from dataframe
-x_DFOS_C12 = df.T.values[0]
-x_DFOS_C12 = np.array(x_DFOS_C12)
-
-limit = 0.08
-pos_cr = 0.6676
-
-mask1 = x_DFOS_C12 > (pos_cr-limit)
-mask2 = x_DFOS_C12 < (pos_cr+limit)
-
-mask = mask1&mask2
-
-x_DFOS_C12 = x_DFOS_C12[mask]
-x_DFOS_C12 = x_DFOS_C12-pos_cr
-
-delta_x = (abs(min(x_DFOS_C12)-max(x_DFOS_C12)))/2
-x_start = -delta_x
-x_end = delta_x
-
-x_model_C12 = np.linspace(x_start, x_end, len(x_DFOS_C12))
-x_model_C12_org = np.linspace(x_start, x_end, len(x_DFOS_C12))
-
-#Liste der Rissbreiten einfügen und zu einem Array umwandeln
-
-
-#CRACK C12
-w_cr_array_C12 = [26.151312777777783, 56.88582611111112, 92.34463333333338, 130.0315105555556, 168.98190833333337,
-              209.0284805555556, 248.09519944444452, 285.26361138888893, 322.0303594444445, 357.5927802777779,
-              391.4908075000001, 412.21442166666674]
-
-
-
-#w_cr_array_C12 = np.array(w_cr_array_C12)
-
-
-y_DFOS = []
-y_max = []
-
-#einlesen der y_daten
-
-for i in range(df.shape[1]-3):
-    y_DFOS_temp = np.array(df.T.values[i+1])
-
-    y_DFOS_temp = np.array(y_DFOS_temp)
-
-    y_DFOS.append(y_DFOS_temp[mask])
-    y_max.append(max(y_DFOS_temp))
-    y_DFOS_temp = np.array(y_DFOS_temp)
-
-
-#umformen in einen Array mit Shape von x_data und w_cr_array
-np.stack(y_DFOS)
-y_DFOS= np.array(y_DFOS)
-y_max = np.array(y_max)
-
-
 def r_squared(y_true, y_pred):
     # Berechnung des Residuals
     residuals = y_true - y_pred
@@ -83,49 +20,6 @@ def r_squared(y_true, y_pred):
     r2 = 1 - (ss_res / ss_tot)
     return r2
 
-
-
-gamma = 24.6
-sigma = 0.015762
-
-
-window = 3
-weights = np.repeat(1.0, window)/window
-x_model_C12 = x_model_C12[1:-1]
-#x_model_C12 = x_model_C12[0]
-
-List_linke_Wendepunkt = []
-List_rechte_Wendepunkt = []
-mittel_Wendepunkt_C12 = []
-max_loc_list = []
-max_list_C12 = []
-max_grad_list_C12 = []
-
-for i in range(12):
-    max_loc_list.append(x_model_C12[np.argmax(y_DFOS[i])])
-    max_list_C12.append((max(y_DFOS[i])))
-    average = np.convolve(y_DFOS[i], weights, mode='valid')
-    gradient = np.gradient(average,x_DFOS_C12[1]-x_DFOS_C12[0])/1000
-    max_grad = max(gradient)
-    max_grad_list_C12.append(max_grad)
-    min_grad = min(gradient)
-    max_index = np.argmax(gradient)
-    min_index = np.argmin(gradient)
-    List_linke_Wendepunkt.append(abs(x_model_C12[max_index]))
-    List_rechte_Wendepunkt.append(x_model_C12[min_index])
-    mittel_Wendepunkt_C12.append((abs(x_model_C12[max_index]) + x_model_C12[min_index]) / 2)
-    #plt.plot(x_model_C12, gradient)
-    #plt.show()
-
-#plt.scatter(w_l,max_list_C12)
-#plt.show()
-
-#plt.scatter(w_l,List_linke_Wendepunkt)
-#plt.scatter(w_l,List_rechte_Wendepunkt)
-#plt.plot(w_l, mittel_Wendepunkt_C12)
-#plt.show()
-
-
 def lorentz(x, gamma, sigma0, sigma1, w_cr):
     y_predicted = w_cr*gamma / (1+(x/(sigma0+sigma1*w_cr))**2)           # virtuelle Daten mit freien Parametern
 
@@ -136,26 +30,33 @@ def lorentz_single(x, gamma, sigma, w_cr):
 
     return y_predicted
 
+window = 3
+weights = np.repeat(1.0, window)/window
+
 ###################################################
 #                C3
 ###################################################
-w_cr_array_C3 = [19.669451388888874, 48.233372777777745, 80.78568333333328, 115.46603972222213, 150.30286916666654,
-                 184.53831499999987, 218.73831055555536, 253.81509111111086, 287.91341222222195, 322.43429111111084,
-                 357.71768590277736, 402.8620627777773]
+w_cr_array_C3 = [20.32505944444444, 49.40898444444446, 82.72851166666668, 117.79031694444447, 152.61090000000004,
+                 186.28492277777787, 219.7565791468255, 254.01888764880965, 288.74052721428575, 323.19018488095253,
+                 358.5200473214287, 404.8731266666667]
 #w_cr_array_C3 = np.array(w_cr_array_C3)
 
 y_DFOS_C3 = []
 for i in range(12):
-    df = pd.read_csv(('Dehnungsverlauf/strainprofile_' + str((i+1)) + '_ES_out_0.65.csv'), sep='\t')
-    y_DFOS_C3.append(df.T.values[1])
+    df = pd.read_csv(('Dehnungsverlauf/strainprofile_' + str((i+1)) + '_ACR1_0.65.csv'), sep='\t')
+    y_DFOS_import = df.T.values[1]
+    y_DFOS_import = [float(x) for x in y_DFOS_import]
+    y_DFOS_import = np.array(y_DFOS_import)
+    y_DFOS_C3.append(y_DFOS_import)
+
 
 # Extract x values from dataframe
 x_DFOS_C3 = df.T.values[0]
 x_DFOS_C3 = np.array(x_DFOS_C3)
 
 #masking
-mask1 = x_DFOS_C3 > (-0.514-0.08)
-mask2 = x_DFOS_C3 < (-0.514+0.08)
+mask1 = x_DFOS_C3 > (-0.5213-0.08)
+mask2 = x_DFOS_C3 < (-0.5213+0.08)
 
 mask = mask1&mask2
 
@@ -202,22 +103,25 @@ for i in range(12):
 ###################################################
 #                C9
 ###################################################
-w_cr_array_C9 = [12.746289345345351, 32.35402805555557, 58.232954722222225, 89.09878972222225, 121.80794166666666,
-                 153.00820527777776, 184.5041462177177, 215.76272015765764, 247.2092651576577, 276.27144999999996,
-                 305.6654791666669, 323.5282844444444]
+w_cr_array_C9 = [13.508229046546552, 33.35508384234234, 60.57087833333333, 91.36222694444447, 124.0084805555556,
+                 155.8088478194445, 186.80642809523803, 218.67845187499984, 249.28426033333318, 281.60293246428574,
+                 312.9477397738092, 311.6893757301583]
 #w_cr_array_C9 = np.array(w_cr_array_C9)
 y_DFOS_C9 = []
 for i in range(12):
-    df = pd.read_csv(('Dehnungsverlauf/strainprofile_' + str((i+1)) + '_ES_out_0.65.csv'), sep='\t')
-    y_DFOS_C9.append(df.T.values[1])
+    df = pd.read_csv(('Dehnungsverlauf/strainprofile_' + str((i+1)) + '_ACR1_0.65.csv'), sep='\t')
+    y_DFOS_import = df.T.values[1]
+    y_DFOS_import = [float(x) for x in y_DFOS_import]
+    y_DFOS_import = np.array(y_DFOS_import)
+    y_DFOS_C9.append(y_DFOS_import)
 
 # Extract x values from dataframe
 x_DFOS_C9 = df.T.values[0]
 x_DFOS_C9 = np.array(x_DFOS_C9)
 
 #masking
-mask1 = x_DFOS_C9 > (0.25-0.08)
-mask2 = x_DFOS_C9 < (0.25+0.08)
+mask1 = x_DFOS_C9 > (0.2515-0.05)
+mask2 = x_DFOS_C9 < (0.2515+0.05)
 
 mask = mask1&mask2
 
@@ -260,6 +164,72 @@ for i in range(12):
 
     #plt.scatter(x_DFOS_C9,y_DFOS_C9[i])
     #plt.show()
+
+###################################################
+#                C12
+###################################################
+w_cr_array_C12 = [26.63485680555558, 57.61857472222225, 93.37536, 131.65188833333337, 170.9102759722223,
+                  211.1452317361112, 250.20251930555568, 286.91174055555564, 323.16453363690516, 358.331415128969,
+                  391.60467962004043, 412.04237326984196]
+#w_cr_array_C9 = np.array(w_cr_array_C9)
+y_DFOS_C12 = []
+for i in range(12):
+    df = pd.read_csv(('Dehnungsverlauf/strainprofile_' + str((i+1)) + '_ACR1_0.65.csv'), sep='\t')
+    y_DFOS_import = df.T.values[1]
+    y_DFOS_import = [float(x) for x in y_DFOS_import]
+    y_DFOS_import = np.array(y_DFOS_import)
+    y_DFOS_C12.append(y_DFOS_import)
+
+# Extract x values from dataframe
+x_DFOS_C12 = df.T.values[0]
+x_DFOS_C12 = np.array(x_DFOS_C12)
+
+#masking
+mask1 = x_DFOS_C12 > (0.67275-0.08)
+mask2 = x_DFOS_C12 < (0.67275+0.08)
+
+mask = mask1&mask2
+
+x_DFOS_C12 = x_DFOS_C12[mask]
+
+for i in range(12):
+    y_DFOS_C12[i] = y_DFOS_C12[i][mask]
+
+index_middle = np.argmax(y_DFOS_C12[4])
+x_middle = x_DFOS_C12[index_middle]
+
+x_DFOS_C12 = x_DFOS_C12-x_middle
+
+delta_x = (abs(min(x_DFOS_C12)-max(x_DFOS_C12)))/2
+x_start = -delta_x
+x_end = delta_x
+
+x_model_C12 = np.linspace(x_start, x_end, len(x_DFOS_C12))
+
+List_linke_Wendepunkt_C12 = []
+List_rechte_Wendepunkt_C12 = []
+mittel_Wendepunkt_C12 = []
+max_loc_list_C12 = []
+max_list_C12 = []
+max_grad_list_C12 = []
+
+for i in range(12):
+    max_loc_list_C12.append(x_model_C12[np.argmax(y_DFOS_C12[i])])
+    max_list_C12.append((max(y_DFOS_C12[i])))
+    average = np.convolve(y_DFOS_C12[i], weights, mode='valid')
+    gradient = np.gradient(average,x_DFOS_C12[1]-x_DFOS_C12[0])/1000
+    max_grad = max(gradient)
+    max_grad_list_C12.append(max_grad)
+    min_grad = min(gradient)
+    max_index = np.argmax(gradient)
+    min_index = np.argmin(gradient)
+    List_linke_Wendepunkt_C12.append(abs(x_model_C12[max_index]))
+    List_rechte_Wendepunkt_C12.append(x_model_C12[min_index])
+    mittel_Wendepunkt_C12.append((abs(x_model_C12[max_index]) + x_model_C12[min_index]) / 2)
+
+
+
+
 
 
 def objective(params, w_cr, strain_max):
@@ -388,7 +358,7 @@ axs[0,1].scatter(x_DFOS_C9,y_DFOS_C9[1])
 
 axs[0,2].plot(x_model_C12, lorentz(x_model_C12,g,sigma0,sigma1,w_cr_array_C12[1]),'k')
 axs[0,2].plot(x_model_C12, lorentz_single(x_model_C12,g,sigma,w_cr_array_C12[1]),'r')
-axs[0,2].scatter(x_DFOS_C3,y_DFOS[1])
+axs[0,2].scatter(x_DFOS_C3,y_DFOS_C12[1])
 
 axs[1,0].plot(x_model_C3, lorentz(x_model_C3,g,sigma0,sigma1,w_cr_array_C3[7]),'k')
 axs[1,0].plot(x_model_C3, lorentz_single(x_model_C3,g,sigma,w_cr_array_C3[7]),'r')
@@ -400,7 +370,7 @@ axs[1,1].scatter(x_DFOS_C9,y_DFOS_C9[7])
 
 axs[1,2].plot(x_model_C12, lorentz(x_model_C12,g,sigma0,sigma1,w_cr_array_C12[7]),'k')
 axs[1,2].plot(x_model_C12, lorentz_single(x_model_C12,g,sigma,w_cr_array_C12[7]),'r')
-axs[1,2].scatter(x_DFOS_C12,y_DFOS[7])
+axs[1,2].scatter(x_DFOS_C12,y_DFOS_C12[7])
 
 axs[2,0].plot(x_model_C3, lorentz(x_model_C3,g,sigma0,sigma1,w_cr_array_C12[11]),'k')
 axs[2,0].plot(x_model_C3, lorentz_single(x_model_C3,g,sigma,w_cr_array_C3[11]),'r')
@@ -412,119 +382,23 @@ axs[2,1].scatter(x_DFOS_C9,y_DFOS_C9[11])
 
 axs[2,2].plot(x_model_C12, lorentz(x_model_C12,g,sigma0,sigma1,w_cr_array_C12[11]),'k')
 axs[2,2].plot(x_model_C12, lorentz_single(x_model_C12,g,sigma,w_cr_array_C12[11]),'r')
-axs[2,2].scatter(x_DFOS_C12,y_DFOS[11])
+axs[2,2].scatter(x_DFOS_C12,y_DFOS_C12[11])
 
 plt.show()
 
 
+POS = -0.5213
+w_cr_array_C3 = [20.32505944444444, 49.40898444444446, 82.72851166666668, 117.79031694444447, 152.61090000000004,
+                 186.28492277777787, 219.7565791468255, 254.01888764880965, 288.74052721428575, 323.19018488095253,
+                 358.5200473214287, 404.8731266666667]
 
-"""
-w_regresss = np.linspace(0,500,21)
+POS = 0.2515
+w_cr_array_C9 = [13.508229046546552, 33.35508384234234, 60.57087833333333, 91.36222694444447, 124.0084805555556,
+                 155.8088478194445, 186.80642809523803, 218.67845187499984, 249.28426033333318, 281.60293246428574,
+                 312.9477397738092, 311.6893757301583]
 
-gradient_opt = []
-for i in range(len(w_regresss)):
-    gradient_opt.append(max(np.gradient(lorentz(x_model_C3,g,sigma0,sigma1,w_regresss[i]),x_model_C3[1]-x_model_C3[0])/1000))
-
-def regress_max(w_cr, alpha, beta):
-    return alpha*w_cr+beta*w_cr**2
-
-alpha = 0.867
-beta = 1.012*10**(-3)
-
-max_grad_list = max_grad_list_C3+max_grad_list_C9+max_grad_list_C12
-
-plt.plot(w_regresss,regress_max(w_regresss,alpha,beta),label='Regression')
-plt.scatter(w_list_all,max_grad_list,label='actual Cracks')
-plt.scatter(w_regresss,gradient_opt,label='Lorentz')
-plt.grid()
-plt.legend()
-plt.show()
-
-
-l1 = lorentz(0.00676,24,sigma0,sigma1,400)
-l2 = lorentz(0.00673,24,sigma0,sigma1,400)
-x_model = np.linspace(-0.08, 0.08, 500)
-l_400 = lorentz(x_model,24,sigma0,sigma1,400)
-index = np.argmax(np.gradient(l_400))
-x_loc = x_model_C12[index]
-print(x_loc)
-delta_x = 0.00676-0.00673
-
-
-print((l2-l1)/(delta_x*1000))
-gradient_400 = np.gradient(lorentz(x_model,24,sigma0,sigma1,400),edge_order=2)
-print('last Line')
-
-
-
-l_400_xC12 = lorentz(x_model_C12,24,sigma0,sigma1,400)
-
-
-w_cr = 400
-sigma = 0.01321
-
-# Schritt 1: Definiere die Funktion
-x = sp.symbols('x')
-f = ((w_cr) * gamma)/(1+(x/sigma)**2)
-
-# Schritt 2: Berechne die Steigung (Ableitung)
-f_prime = sp.diff(f, x)
-
-# Schritt 3: Plotte die Funktion und ihre Steigung
-# Konvertiere die symbolische Funktion und Ableitung in NumPy-Funktionen
-f_func = sp.lambdify(x, f, 'numpy')
-f_prime_func = sp.lambdify(x, f_prime, 'numpy')
-
-# Definiere den Definitionsbereich
-x_values = np.linspace(-0.08, 0.08, 500)
-
-# Berechne die Funktionswerte und die Ableitungswerte
-y_values = f_func(x_values)
-slope_values = f_prime_func(x_values)/1000
-
-# Plotte die Funktion und ihre Steigung
-plt.plot(x_values, slope_values, label='SciPy.dify')
-#plt.plot(x_model,gradient_400, label='x=500pts')
-#plt.plot(x_model_C12,np.gradient(l_400_xC12), label='x=250pts')
-plt.plot(x_model_C12,np.gradient(l_400_xC12,x_model_C12[1]-x_model_C12[0])/1000, label='NP.Gradient')
-plt.xlabel('x')
-plt.ylabel('y')
-plt.title('Gradient und Steigung')
-plt.legend()
-plt.grid(True)
-plt.show()
-#
-plt.plot(x_values, y_values, label='Funktion:f(x)')
-plt.plot(x_model,l_400, label='sig0 und sig1')
-plt.xlabel('x')
-plt.ylabel('y')
-plt.title('Lorentzfunktion')
-plt.legend()
-plt.grid(True)
-plt.show()
-"""
-
-
-
-
-
-
-
-
-
-
-POS = -0.51
-w_cr_array_C3 = [19.669451388888874, 48.233372777777745, 80.78568333333328, 115.46603972222213, 150.30286916666654,
-                 184.53831499999987, 218.73831055555536, 253.81509111111086, 287.91341222222195, 322.43429111111084,
-                 357.71768590277736, 402.8620627777773]
-
-POS = 0.25
-w_cr_array_C9 = [12.746289345345351, 32.35402805555557, 58.232954722222225, 89.09878972222225, 121.80794166666666,
-                 153.00820527777776, 184.5041462177177, 215.76272015765764, 247.2092651576577, 276.27144999999996,
-                 305.6654791666669, 323.5282844444444]
-
-POS = 0.67
-w_cr_array_C12 = [26.151312777777783, 56.88582611111112, 92.34463333333338, 130.0315105555556, 168.98190833333337,
-              209.0284805555556, 248.09519944444452, 285.26361138888893, 322.0303594444445, 357.5927802777779,
-              391.4908075000001, 412.21442166666674]
+POS = 0.67275
+w_cr_array_C12 = [26.63485680555558, 57.61857472222225, 93.37536, 131.65188833333337, 170.9102759722223,
+                  211.1452317361112, 250.20251930555568, 286.91174055555564, 323.16453363690516, 358.331415128969,
+                  391.60467962004043, 412.04237326984196]
 
