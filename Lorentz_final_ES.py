@@ -9,8 +9,6 @@ import pandas as pd
 import sympy as sp
 
 
-# Name der CSV-Datei
-#csv_file = 'cr5_ES_out_0.65'
 
 # Load CSV file into a Pandas dataframe
 #df = pd.read_csv('Dehnungsverlauf/strain_peak_for_ES_out_at_x_0.67_m.csv')
@@ -20,48 +18,47 @@ df = pd.read_csv('Dehnungsverlauf/strain_peak_for_ES_out_at_x_0.67_m.csv')
 x_DFOS_C12 = df.T.values[0]
 x_DFOS_C12 = np.array(x_DFOS_C12)
 
+# limit beschreibt den Abstand nach rechts und links von Rissmitte pos_cr, limit in [m]
 limit = 0.08
 pos_cr = 0.6676
 
+#erstellt Masken, wodruch der Array gekürzt werden kann, da die Rohdaten alle Risse beinhalten
 mask1 = x_DFOS_C12 > (pos_cr-limit)
 mask2 = x_DFOS_C12 < (pos_cr+limit)
 
+#kombination beider Masken
 mask = mask1&mask2
 
+#Überlagerung/ Abschneiden der x Daten, damit nur die x Daten rund um die Rissspitze vorhanden sind
 x_DFOS_C12 = x_DFOS_C12[mask]
 x_DFOS_C12 = x_DFOS_C12-pos_cr
 
+#ein Delta x bestimmen, was dem Unterschied zwischen den größten und kleinsten x Wert repräsentiert
 delta_x = (abs(min(x_DFOS_C12)-max(x_DFOS_C12)))/2
 x_start = -delta_x
 x_end = delta_x
 
+#mit linspace daten Punkte im gleichmäßigen Abstand
 x_model_C12 = np.linspace(x_start, x_end, len(x_DFOS_C12))
-x_model_C12_org = np.linspace(x_start, x_end, len(x_DFOS_C12))
 
-#Liste der Rissbreiten einfügen und zu einem Array umwandeln
-
-
+#Liste der Rissbreiten einfügen
 #CRACK C12
 w_cr_array_C12 = [26.151312777777783, 56.88582611111112, 92.34463333333338, 130.0315105555556, 168.98190833333337,
               209.0284805555556, 248.09519944444452, 285.26361138888893, 322.0303594444445, 357.5927802777779,
               391.4908075000001, 412.21442166666674]
 
-
-
-#w_cr_array_C12 = np.array(w_cr_array_C12)
-
-
+#Liste für das Einlesen der y_daten erstellen
 y_DFOS = []
 y_max = []
 
 #einlesen der y_daten
-
 for i in range(df.shape[1]-3):
     y_DFOS_temp = np.array(df.T.values[i+1])
 
     y_DFOS_temp = np.array(y_DFOS_temp)
 
     y_DFOS.append(y_DFOS_temp[mask])
+    #maximum der y_daten
     y_max.append(max(y_DFOS_temp))
     y_DFOS_temp = np.array(y_DFOS_temp)
 
@@ -71,7 +68,7 @@ np.stack(y_DFOS)
 y_DFOS= np.array(y_DFOS)
 y_max = np.array(y_max)
 
-
+#R_quadrat definition um ein Fehlermaß bestimmen zu können
 def r_squared(y_true, y_pred):
     # Berechnung des Residuals
     residuals = y_true - y_pred
@@ -83,12 +80,7 @@ def r_squared(y_true, y_pred):
     r2 = 1 - (ss_res / ss_tot)
     return r2
 
-
-
-gamma = 24.6
-sigma = 0.015762
-
-
+#fenster definieren, wodurch ein laufender Mittelwert bestimmt wert, die Wichtung ist hier jeweils 1/3 bei einer Fenstergröße von 3
 window = 3
 weights = np.repeat(1.0, window)/window
 x_model_C12 = x_model_C12[1:-1]
@@ -114,23 +106,16 @@ for i in range(12):
     List_linke_Wendepunkt.append(abs(x_model_C12[max_index]))
     List_rechte_Wendepunkt.append(x_model_C12[min_index])
     mittel_Wendepunkt_C12.append((abs(x_model_C12[max_index]) + x_model_C12[min_index]) / 2)
-    #plt.plot(x_model_C12, gradient)
-    #plt.show()
-
-#plt.scatter(w_l,max_list_C12)
-#plt.show()
-
-#plt.scatter(w_l,List_linke_Wendepunkt)
-#plt.scatter(w_l,List_rechte_Wendepunkt)
-#plt.plot(w_l, mittel_Wendepunkt_C12)
-#plt.show()
 
 
+
+#Definition der Lorentzfunktion mit sigma0 und sigma1, um eine lineare Abhängigkeit von w_cr zu definieren
 def lorentz(x, gamma, sigma0, sigma1, w_cr):
     y_predicted = w_cr*gamma / (1+(x/(sigma0+sigma1*w_cr))**2)           # virtuelle Daten mit freien Parametern
 
     return y_predicted
 
+#lorentz_single ist die definition mit nur 2 freien Parametern: gamma und sigma
 def lorentz_single(x, gamma, sigma, w_cr):
     y_predicted = w_cr*gamma / (1+(x/sigma)**2)           # virtuelle Daten mit freien Parametern
 
@@ -139,11 +124,12 @@ def lorentz_single(x, gamma, sigma, w_cr):
 ###################################################
 #                C3
 ###################################################
+#Liste der Rissbreiten einfügen FOSANALYSIS
 w_cr_array_C3 = [19.669451388888874, 48.233372777777745, 80.78568333333328, 115.46603972222213, 150.30286916666654,
                  184.53831499999987, 218.73831055555536, 253.81509111111086, 287.91341222222195, 322.43429111111084,
                  357.71768590277736, 402.8620627777773]
 #w_cr_array_C3 = np.array(w_cr_array_C3)
-
+#Liste für das Einlesen der y_daten erstellen
 y_DFOS_C3 = []
 for i in range(12):
     df = pd.read_csv(('Dehnungsverlauf/strainprofile_' + str((i+1)) + '_ES_out_0.65.csv'), sep='\t')
@@ -157,37 +143,49 @@ x_DFOS_C3 = np.array(x_DFOS_C3)
 mask1 = x_DFOS_C3 > (-0.514-0.08)
 mask2 = x_DFOS_C3 < (-0.514+0.08)
 
+#combining the mask
 mask = mask1&mask2
 
+#Maske anwenden auf die x_werte
 x_DFOS_C3 = x_DFOS_C3[mask]
 
-
+#maske anwenden auf die y_werte
 for i in range(12):
     y_DFOS_C3[i] = y_DFOS_C3[i][mask]
 
+#Rissmitte über den größten y_wert bestimmen und dann den dazugehörigen Index aus der x_daten wählen
 index_middle = np.argmax(y_DFOS_C3[4])
 x_middle = x_DFOS_C3[index_middle]
-
+#den Ausschnitt der x daten mit dem x_wert vom strain peak subtrahieren
 x_DFOS_C3 = x_DFOS_C3-x_middle
 
 delta_x = (abs(min(x_DFOS_C3)-max(x_DFOS_C3)))/2
 x_start = -delta_x
 x_end = delta_x
 
+#mit linspace in gleichen Abständen x_werte zwischen min und max erstellen
 x_model_C3 = np.linspace(x_start, x_end, len(x_DFOS_C3))
 
+#Listen erstellen, welche in der Schleife befüllt werden können(für jeden Belastungsschritt)
 List_linke_Wendepunkt_C3 = []
 List_rechte_Wendepunkt_C3 = []
 mittel_Wendepunkt_C3 = []
+#ort des Maximums
 max_loc_list_C3 = []
+# größe des Maximums
 max_list_C3 = []
+#größe des größten Gradienten
 max_grad_list_C3 = []
 
+#schleife um jeden Belastungspunkt einzeln auszuwerten
 for i in range(12):
     max_loc_list_C3.append(x_model_C3[np.argmax(y_DFOS_C3[i])])
     max_list_C3.append((max(y_DFOS_C3[i])))
+    #mittelwert mit dem bestimmten Fenster über die Y_daten laufen lassen
     average = np.convolve(y_DFOS_C3[i], weights, mode='valid')
+    #Gradienten bestimmen (Array)
     gradient = np.gradient(average,x_DFOS_C3[1]-x_DFOS_C3[0])/1000
+    #größten Wert des Gradienten Array bestimmen
     max_grad = max(gradient)
     max_grad_list_C3.append(max_grad)
     min_grad = min(gradient)
@@ -261,7 +259,11 @@ for i in range(12):
     #plt.scatter(x_DFOS_C9,y_DFOS_C9[i])
     #plt.show()
 
+#################################################################
+#OPTIMIERUNG
+#################################################################
 
+#Zu minimierendes Ziel für die Bestimmung von gamma
 def objective(params, w_cr, strain_max):
     gamma = params
     strain_predicted = w_cr*gamma #virtuelle Daten mit freien Parametern
@@ -281,6 +283,7 @@ result = minimize(objective, initial_params, args=(w_cr_array_C12, max_list_C12)
 print(result.x[0])
 gamma_C12 = result.x[0]
 
+#Funktion um strain_max zu bestimmen
 def Regression(w_cr, gamma):
     strain_max = w_cr*gamma
     return strain_max
@@ -298,26 +301,32 @@ plt.plot(w_cr_array_C12,C12,label='Reg C12')
 plt.legend()
 plt.show()
 
+#Zu Minimierendes Ziel für die Bestimmung von Sigma, der Zusammenhang von Sigma und dem Wendepunkt ist im Latex Dokument erläutert
+# x_WP = sigma/WURZEL(3)  bzw WURZEL(3)*x_WP = sigma
 def objective_WP(params, w_cr, sigma_real):
     sigma0, sigma1 = params
     sigma_predicted = sigma0 + np.array(w_cr) * sigma1 #virtuelle Daten mit freien Parametern
     error = np.sum((np.array(sigma_real)*np.sqrt(3) - sigma_predicted)**2)                                        #least square analyse
     return error
 
+#Zu Minimierendes Ziel für die Bestimmung von Sigma, der Zusammenhang von Sigma und dem Wendepunkt ist im Latex Dokument erläutert
+# x_WP = sigma/WURZEL(3)  bzw WURZEL(3)*x_WP = sigma
 def objective_WP_single(params, w_cr, sigma_real):
     sigma = params
     sigma_predicted = sigma  #virtuelle Daten mit freien Parametern
     error = np.sum((np.array(sigma_real)*np.sqrt(3) - sigma_predicted)**2)                                        #least square analyse
     return error
 
+#bestimmung der Anfangsparameter
 initial_params = [0.009, -0.0001]
 initial_params_single = [1.6]
 
-
+#lin Reg um sigma zu beschreiben, wenn dieser Parameter von w_cr abhängig ist
 def Regression_sigma(w_cr, sigma0, sigma1):
     sig = sigma0 + np.array(w_cr) * sigma1
     return sig
 
+#bestimmung der Werte für die Individuellen Risse
 result = minimize(objective_WP, initial_params, args=(w_cr_array_C3, mittel_Wendepunkt_C3))
 sigma0_C3, sigma1_C3 = result.x
 result = minimize(objective_WP_single, initial_params_single, args=(w_cr_array_C3, mittel_Wendepunkt_C3))
@@ -339,7 +348,7 @@ plt.scatter(w_cr_array_C12,mittel_Wendepunkt_C12,label='X WP C12')
 plt.legend()
 plt.show()
 
-
+#Darstellung der WP*WURZEL(3) zu den optimierten sigma Parametern
 plt.scatter(w_cr_array_C3,np.array(mittel_Wendepunkt_C3)*np.sqrt(3),label='Sigma C3')
 plt.plot(w_cr_array_C3, Regression_sigma(w_cr_array_C3,sigma0_C3,sigma1_C3))
 
@@ -352,30 +361,35 @@ plt.plot(w_cr_array_C12, Regression_sigma(w_cr_array_C12,sigma0_C12,sigma1_C12))
 plt.legend()
 plt.show()
 
+#Kombination aller Listen damit eine Optimierung global erfolgen kann
 strain_max_list_all = max_list_C3 + max_list_C9 + max_list_C12
 w_list_all = w_cr_array_C3 + w_cr_array_C9 + w_cr_array_C12
 WP_all = mittel_Wendepunkt_C3+mittel_Wendepunkt_C9+mittel_Wendepunkt_C12
 
+#initialer Parameter für gamma
 initial_params = [24.6]
 result = result = minimize(objective, initial_params, args=(w_list_all, strain_max_list_all))
 
 print('Gamma=',result.x[0])
 g = result.x[0]
 
+#initiale Parameter für sigma0 und sigma1
 initial_params = [0.009, -0.0001]
 result = minimize(objective_WP, initial_params, args=(w_list_all, WP_all))
 sigma0, sigma1 = result.x
 print('sigma0=',sigma0)
 print('sigma1=',sigma1)
 
-
+#initioale parameter für nur ein sigma
 print('mit nur einem sigma')
 initial_params = [0.009]
 result = minimize(objective_WP_single,initial_params, args=(w_list_all, WP_all))
 sigma = result.x
 print('sigma=',sigma)
 
-
+#Multiplot um die verschiedenen Risse zu verschiedenen Verschiebungszeitpunkten darzustellen
+#schwarze Funktion ist mit sigma0 und sigma1
+#rote Funktion hat nur die beiden Parameter gamma und sigma
 fig, axs = plt.subplots(3,3)
 
 axs[0,0].plot(x_model_C3, lorentz(x_model_C3,g,sigma0,sigma1,w_cr_array_C3[1]),'k')
@@ -415,102 +429,6 @@ axs[2,2].plot(x_model_C12, lorentz_single(x_model_C12,g,sigma,w_cr_array_C12[11]
 axs[2,2].scatter(x_DFOS_C12,y_DFOS[11])
 
 plt.show()
-
-
-
-"""
-w_regresss = np.linspace(0,500,21)
-
-gradient_opt = []
-for i in range(len(w_regresss)):
-    gradient_opt.append(max(np.gradient(lorentz(x_model_C3,g,sigma0,sigma1,w_regresss[i]),x_model_C3[1]-x_model_C3[0])/1000))
-
-def regress_max(w_cr, alpha, beta):
-    return alpha*w_cr+beta*w_cr**2
-
-alpha = 0.867
-beta = 1.012*10**(-3)
-
-max_grad_list = max_grad_list_C3+max_grad_list_C9+max_grad_list_C12
-
-plt.plot(w_regresss,regress_max(w_regresss,alpha,beta),label='Regression')
-plt.scatter(w_list_all,max_grad_list,label='actual Cracks')
-plt.scatter(w_regresss,gradient_opt,label='Lorentz')
-plt.grid()
-plt.legend()
-plt.show()
-
-
-l1 = lorentz(0.00676,24,sigma0,sigma1,400)
-l2 = lorentz(0.00673,24,sigma0,sigma1,400)
-x_model = np.linspace(-0.08, 0.08, 500)
-l_400 = lorentz(x_model,24,sigma0,sigma1,400)
-index = np.argmax(np.gradient(l_400))
-x_loc = x_model_C12[index]
-print(x_loc)
-delta_x = 0.00676-0.00673
-
-
-print((l2-l1)/(delta_x*1000))
-gradient_400 = np.gradient(lorentz(x_model,24,sigma0,sigma1,400),edge_order=2)
-print('last Line')
-
-
-
-l_400_xC12 = lorentz(x_model_C12,24,sigma0,sigma1,400)
-
-
-w_cr = 400
-sigma = 0.01321
-
-# Schritt 1: Definiere die Funktion
-x = sp.symbols('x')
-f = ((w_cr) * gamma)/(1+(x/sigma)**2)
-
-# Schritt 2: Berechne die Steigung (Ableitung)
-f_prime = sp.diff(f, x)
-
-# Schritt 3: Plotte die Funktion und ihre Steigung
-# Konvertiere die symbolische Funktion und Ableitung in NumPy-Funktionen
-f_func = sp.lambdify(x, f, 'numpy')
-f_prime_func = sp.lambdify(x, f_prime, 'numpy')
-
-# Definiere den Definitionsbereich
-x_values = np.linspace(-0.08, 0.08, 500)
-
-# Berechne die Funktionswerte und die Ableitungswerte
-y_values = f_func(x_values)
-slope_values = f_prime_func(x_values)/1000
-
-# Plotte die Funktion und ihre Steigung
-plt.plot(x_values, slope_values, label='SciPy.dify')
-#plt.plot(x_model,gradient_400, label='x=500pts')
-#plt.plot(x_model_C12,np.gradient(l_400_xC12), label='x=250pts')
-plt.plot(x_model_C12,np.gradient(l_400_xC12,x_model_C12[1]-x_model_C12[0])/1000, label='NP.Gradient')
-plt.xlabel('x')
-plt.ylabel('y')
-plt.title('Gradient und Steigung')
-plt.legend()
-plt.grid(True)
-plt.show()
-#
-plt.plot(x_values, y_values, label='Funktion:f(x)')
-plt.plot(x_model,l_400, label='sig0 und sig1')
-plt.xlabel('x')
-plt.ylabel('y')
-plt.title('Lorentzfunktion')
-plt.legend()
-plt.grid(True)
-plt.show()
-"""
-
-
-
-
-
-
-
-
 
 
 POS = -0.51
