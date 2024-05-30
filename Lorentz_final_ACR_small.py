@@ -20,16 +20,18 @@ def r_squared(y_true, y_pred):
     r2 = 1 - (ss_res / ss_tot)
     return r2
 
+#Definition der Lorentzfunktion mit sigma0 und sigma1, um eine lineare Abhängigkeit von w_cr zu definieren
 def lorentz(x, gamma, sigma0, sigma1, w_cr):
     y_predicted = w_cr*gamma / (1+(x/(sigma0+sigma1*w_cr))**2)           # virtuelle Daten mit freien Parametern
 
     return y_predicted
-
+#lorentz_single ist die definition mit nur 2 freien Parametern: gamma und sigma
 def lorentz_single(x, gamma, sigma, w_cr):
     y_predicted = w_cr*gamma / (1+(x/sigma)**2)           # virtuelle Daten mit freien Parametern
 
     return y_predicted
 
+#fenster definieren, wodurch ein laufender Mittelwert bestimmt wert, die Wichtung ist hier jeweils 1/3 bei einer Fenstergröße von 3
 window = 3
 weights = np.repeat(1.0, window)/window
 
@@ -39,10 +41,12 @@ weights = np.repeat(1.0, window)/window
 #w_cr_array_C3 = [20.32505944444444, 49.40898444444446, 82.72851166666668, 117.79031694444447, 152.61090000000004,
 #                 186.28492277777787, 219.7565791468255, 254.01888764880965, 288.74052721428575, 323.19018488095253,
 #                 358.5200473214287, 404.8731266666667]
+#Liste der Rissbreiten einfügen FOSANALYSIS
 w_cr_array_C3 = [20.32505944444444, 49.40898444444446, 82.72851166666668, 117.79031694444447, 152.61090000000004,
                  186.28492277777787]
 #w_cr_array_C3 = np.array(w_cr_array_C3)
 
+#einlesen der y_daten
 y_DFOS_C3 = []
 for i in range(6):
     df = pd.read_csv(('Dehnungsverlauf/strainprofile_' + str((i+1)) + '_ACR1_0.65.csv'), sep='\t')
@@ -60,37 +64,50 @@ x_DFOS_C3 = np.array(x_DFOS_C3)
 mask1 = x_DFOS_C3 > (-0.5213-0.08)
 mask2 = x_DFOS_C3 < (-0.5213+0.08)
 
+#combining the mask
 mask = mask1&mask2
 
+#Maske anwenden auf die x_werte
 x_DFOS_C3 = x_DFOS_C3[mask]
 
 
+#maske anwenden auf die y_werte
 for i in range(6):
     y_DFOS_C3[i] = y_DFOS_C3[i][mask]
 
+#Rissmitte über den größten y_wert bestimmen und dann den dazugehörigen Index aus der x_daten wählen
 index_middle = np.argmax(y_DFOS_C3[4])
 x_middle = x_DFOS_C3[index_middle]
 
+#den Ausschnitt der x daten mit dem x_wert vom strain peak subtrahieren
 x_DFOS_C3 = x_DFOS_C3-x_middle
 
 delta_x = (abs(min(x_DFOS_C3)-max(x_DFOS_C3)))/2
 x_start = -delta_x
 x_end = delta_x
 
+#mit linspace in gleichen Abständen x_werte zwischen min und max erstellen
 x_model_C3 = np.linspace(x_start, x_end, len(x_DFOS_C3))
 
+#Listen erstellen, welche in der Schleife befüllt werden können(für jeden Belastungsschritt)
 List_linke_Wendepunkt_C3 = []
 List_rechte_Wendepunkt_C3 = []
 mittel_Wendepunkt_C3 = []
+#ort des Maximums
 max_loc_list_C3 = []
+# größe des Maximums
 max_list_C3 = []
+#größe des größten Gradienten
 max_grad_list_C3 = []
 
 for i in range(6):
     max_loc_list_C3.append(x_model_C3[np.argmax(y_DFOS_C3[i])])
     max_list_C3.append((max(y_DFOS_C3[i])))
+    #mittelwert mit dem bestimmten Fenster über die Y_daten laufen lassen
     average = np.convolve(y_DFOS_C3[i], weights, mode='valid')
+    #Gradienten bestimmen (Array)
     gradient = np.gradient(average,x_DFOS_C3[1]-x_DFOS_C3[0])/1000
+    #größten Wert des Gradienten Array bestimmen
     max_grad = max(gradient)
     max_grad_list_C3.append(max_grad)
     min_grad = min(gradient)
@@ -237,6 +254,7 @@ for i in range(6):
 
 
 
+#Zu minimierendes Ziel für die Bestimmung von gamma
 
 def objective(params, w_cr, strain_max):
     gamma = params
@@ -257,6 +275,7 @@ result = minimize(objective, initial_params, args=(w_cr_array_C12, max_list_C12)
 print(result.x[0])
 gamma_C12 = result.x[0]
 
+#Funktion um strain_max zu bestimmen
 def Regression(w_cr, gamma):
     strain_max = w_cr*gamma
     return strain_max
@@ -274,11 +293,17 @@ plt.plot(w_cr_array_C12,C12,label='Reg C12')
 plt.legend()
 plt.show()
 
+#Zu Minimierendes Ziel für die Bestimmung von Sigma, der Zusammenhang von Sigma und dem Wendepunkt ist im Latex Dokument erläutert
+# x_WP = sigma/WURZEL(3)  bzw WURZEL(3)*x_WP = sigma
+
 def objective_WP(params, w_cr, sigma_real):
     sigma0, sigma1 = params
     sigma_predicted = sigma0 + np.array(w_cr) * sigma1 #virtuelle Daten mit freien Parametern
     error = np.sum((np.array(sigma_real)*np.sqrt(3) - sigma_predicted)**2)                                        #least square analyse
     return error
+
+#Zu Minimierendes Ziel für die Bestimmung von Sigma, der Zusammenhang von Sigma und dem Wendepunkt ist im Latex Dokument erläutert
+# x_WP = sigma/WURZEL(3)  bzw WURZEL(3)*x_WP = sigma
 
 def objective_WP_single(params, w_cr, sigma_real):
     sigma = params
@@ -286,14 +311,16 @@ def objective_WP_single(params, w_cr, sigma_real):
     error = np.sum((np.array(sigma_real)*np.sqrt(3) - sigma_predicted)**2)                                        #least square analyse
     return error
 
+#bestimmung der Anfangsparameter
 initial_params = [0.009, -0.0001]
 initial_params_single = [1.6]
 
-
+#lin Reg um sigma zu beschreiben, wenn dieser Parameter von w_cr abhängig ist
 def Regression_sigma(w_cr, sigma0, sigma1):
     sig = sigma0 + np.array(w_cr) * sigma1
     return sig
 
+#bestimmung der Werte für die Individuellen Risse
 result = minimize(objective_WP, initial_params, args=(w_cr_array_C3, mittel_Wendepunkt_C3))
 sigma0_C3, sigma1_C3 = result.x
 result = minimize(objective_WP_single, initial_params_single, args=(w_cr_array_C3, mittel_Wendepunkt_C3))
@@ -328,16 +355,19 @@ plt.plot(w_cr_array_C12, Regression_sigma(w_cr_array_C12,sigma0_C12,sigma1_C12))
 plt.legend()
 plt.show()
 
+#Kombination aller Listen damit eine Optimierung global erfolgen kann
 strain_max_list_all = max_list_C3 + max_list_C9 + max_list_C12
 w_list_all = w_cr_array_C3 + w_cr_array_C9 + w_cr_array_C12
 WP_all = mittel_Wendepunkt_C3+mittel_Wendepunkt_C9+mittel_Wendepunkt_C12
 
+#initialer Parameter für gamma
 initial_params = [24.6]
 result = result = minimize(objective, initial_params, args=(w_list_all, strain_max_list_all))
 
 print('Gamma=',result.x[0])
 g = result.x[0]
 
+#initiale Parameter für sigma0 und sigma1
 initial_params = [0.009, -0.0001]
 result = minimize(objective_WP, initial_params, args=(w_list_all, WP_all))
 sigma0, sigma1 = result.x
@@ -345,13 +375,16 @@ print('sigma0=',sigma0)
 print('sigma1=',sigma1)
 
 
+#initioale parameter für nur ein sigma
 print('mit nur einem sigma')
 initial_params = [0.009]
 result = minimize(objective_WP_single,initial_params, args=(w_list_all, WP_all))
 sigma = result.x
 print('sigma=',sigma)
 
-
+#Multiplot um die verschiedenen Risse zu verschiedenen Verschiebungszeitpunkten darzustellen
+#schwarze Funktion ist mit sigma0 und sigma1
+#rote Funktion hat nur die beiden Parameter gamma und sigma
 fig, axs = plt.subplots(3,3)
 
 axs[0,0].plot(x_model_C3, lorentz(x_model_C3,g,sigma0,sigma1,w_cr_array_C3[1]),'k')
