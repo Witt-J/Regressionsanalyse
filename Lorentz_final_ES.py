@@ -388,7 +388,7 @@ axs[0,1].scatter(x_DFOS_C9,y_DFOS_C9[1])
 
 axs[0,2].plot(x_model_C12, lorentz(x_model_C12,g,sigma0,sigma1,w_cr_array_C12[1]),'k')
 axs[0,2].plot(x_model_C12, lorentz_single(x_model_C12,g,sigma,w_cr_array_C12[1]),'r')
-axs[0,2].scatter(x_DFOS_C3,y_DFOS[1])
+axs[0,2].scatter(x_DFOS_C12,y_DFOS[1])
 
 axs[1,0].plot(x_model_C3, lorentz(x_model_C3,g,sigma0,sigma1,w_cr_array_C3[7]),'k')
 axs[1,0].plot(x_model_C3, lorentz_single(x_model_C3,g,sigma,w_cr_array_C3[7]),'r')
